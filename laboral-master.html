@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboral Master</title>
+    <meta name="theme-color" content="#1e293b">
+    <meta name="description" content="Registro de horas extras y vacaciones">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Laboral">
+    <link rel="manifest" id="pwa-manifest">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600;700;800&display=swap');
+
+        :root {
+            --primary: #1e293b;
+            --primary-light: #334155;
+            --accent: #f59e0b;
+            --accent-blue: #0ea5e9;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg: #f0f4f8;
+            --card: #ffffff;
+            --border: #e2e8f0;
+            --text: #1e293b;
+            --muted: #64748b;
+            --empresa-color: #f59e0b;
+            --trabajador-color: #0ea5e9;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'IBM Plex Sans', sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            color: var(--text);
+            padding-bottom: 30px;
+        }
+
+        /* HEADER */
+        .app-header {
+            background: var(--primary);
+            color: white;
+            padding: 16px 20px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+        .app-title {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        .app-title span { color: var(--accent); }
+
+        .header-actions { display: flex; gap: 8px; align-items: center; }
+
+        #pwa-install-btn {
+            background: var(--accent);
+            color: var(--primary);
+            border: none;
+            border-radius: 8px;
+            padding: 7px 12px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            cursor: pointer;
+            display: none;
+            font-family: 'IBM Plex Sans', sans-serif;
+            animation: pulse-btn 2s infinite;
+        }
+        @keyframes pulse-btn {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.4); }
+            50% { box-shadow: 0 0 0 6px rgba(245,158,11,0); }
+        }
+
+        .gear-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            width: 34px; height: 34px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* NAV TABS */
+        .nav-tabs {
+            display: flex;
+            gap: 0;
+        }
+        .nav-btn {
+            flex: 1;
+            padding: 12px 5px;
+            border: none;
+            background: transparent;
+            color: rgba(255,255,255,0.5);
+            font-weight: 700;
+            font-size: 0.82rem;
+            cursor: pointer;
+            transition: 0.2s;
+            border-bottom: 3px solid transparent;
+            font-family: 'IBM Plex Sans', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .nav-btn.active {
+            color: white;
+            border-bottom-color: var(--accent);
+        }
+
+        /* CONTAINER */
+        .container { max-width: 480px; margin: 0 auto; padding: 16px; }
+
+        /* TOAST */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--primary);
+            color: white;
+            padding: 12px 22px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            z-index: 9999;
+            transition: transform 0.3s ease;
+            border-left: 4px solid var(--success);
+            white-space: nowrap;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast.error { border-left-color: var(--danger); }
+
+        /* SECTION TITLE */
+        .section-title {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            margin-top: 20px;
+        }
+
+        /* HORARIO REF */
+        .horario-ref {
+            background: var(--primary);
+            color: white;
+            border-radius: 14px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.78rem;
+            line-height: 1.8;
+        }
+        .horario-ref .hl { color: var(--accent); font-weight: 700; }
+
+        /* CARD */
+        .card {
+            background: var(--card);
+            border-radius: 20px;
+            padding: 18px;
+            border: 1px solid var(--border);
+            margin-bottom: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.78rem;
+            color: var(--muted);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input[type="date"], input[type="time"], input[type="number"], select, textarea {
+            width: 100%;
+            padding: 11px 14px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            background: #f8fafc;
+            font-family: 'IBM Plex Sans', sans-serif;
+            margin-bottom: 12px;
+            color: var(--text);
+            transition: border-color 0.2s;
+            -webkit-appearance: none;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            background: white;
+        }
+        textarea { resize: vertical; min-height: 60px; }
+
+        .row { display: flex; gap: 10px; }
+        .row > div { flex: 1; }
+
+        /* CHECKBOX */
+        .check-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #f8fafc;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 2px solid var(--border);
+            margin-bottom: 12px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text);
+            transition: 0.2s;
+        }
+        .check-label:hover { border-color: var(--accent-blue); }
+        .check-label input[type="checkbox"] {
+            width: 18px; height: 18px;
+            margin: 0;
+            accent-color: var(--accent-blue);
+            cursor: pointer;
+        }
+
+        /* BUTTONS */
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 14px;
+            font-size: 0.9rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: 0.15s;
+            font-family: 'IBM Plex Sans', sans-serif;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: linear-gradient(135deg, #10b981, #059669); color: white; display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+        /* STATS GRID */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 14px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .stat-label { font-size: 0.7rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+        .stat-value { font-family: 'IBM Plex Mono', monospace; font-size: 1.8rem; font-weight: 700; margin-top: 4px; color: var(--text); }
+        .stat-card.highlight { background: #f0fdf4; border-color: #a7f3d0; }
+        .stat-card.highlight .stat-value { color: var(--success); }
+        .stat-card.empresa .stat-value { color: var(--empresa-color); }
+        .stat-card.trabajador .stat-value { color: var(--trabajador-color); }
+
+        /* PROGRESS */
+        .progress-wrap { margin-bottom: 16px; }
+        .progress-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+        .progress-track {
+            background: var(--border);
+            border-radius: 20px;
+            height: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #f59e0b);
+            width: 0%;
+            transition: width 0.6s ease;
+            border-radius: 20px;
+        }
+        .progress-fill.danger { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+
+        /* TYPE PICKER */
+        .type-picker { display: flex; gap: 10px; margin-bottom: 12px; }
+        .type-btn {
+            flex: 1;
+            padding: 14px 10px;
+            border-radius: 14px;
+            border: 2px solid var(--border);
+            background: #f8fafc;
+            font-weight: 800;
+            font-size: 0.82rem;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: 'IBM Plex Sans', sans-serif;
+            text-transform: uppercase;
+        }
+        .type-btn.active-emp { border-color: var(--empresa-color); background: #fffbeb; color: #b45309; }
+        .type-btn.active-trab { border-color: var(--trabajador-color); background: #f0f9ff; color: #0369a1; }
+
+        /* ITEM CARDS */
+        .item-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--border);
+            border-radius: 14px;
+            padding: 13px 14px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+            animation: slideIn 0.2s ease;
+        }
+        @keyframes slideIn { from { opacity:0; transform: translateY(-8px); } to { opacity:1; transform:none; } }
+        .item-date { font-family: 'IBM Plex Mono', monospace; font-weight: 700; font-size: 0.95rem; }
+        .item-sub { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+        .item-note { font-size: 0.75rem; color: var(--muted); font-style: italic; margin-top: 5px; padding-top: 5px; border-top: 1px dashed var(--border); }
+        .item-hours { font-family: 'IBM Plex Mono', monospace; font-weight: 700; font-size: 1rem; color: var(--success); white-space: nowrap; }
+        .del-btn {
+            background: #fee2e2;
+            color: var(--danger);
+            border: none;
+            border-radius: 10px;
+            width: 34px; height: 34px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            transition: 0.15s;
+        }
+        .del-btn:active { transform: scale(0.9); }
+
+        /* MES SELECTOR */
+        .mes-row { display: flex; gap: 10px; margin-bottom: 14px; }
+        .mes-row select { flex: 1; margin-bottom: 0; }
+
+        /* BACKUP */
+        .backup-row { display: flex; gap: 10px; margin-top: 24px; }
+        .btn-backup {
+            flex: 1;
+            background: var(--card);
+            color: var(--muted);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 11px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'IBM Plex Sans', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* SETTINGS MODAL */
+        .modal-overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 500;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal {
+            background: white;
+            border-radius: 24px;
+            padding: 24px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: modalIn 0.3s ease;
+        }
+        @keyframes modalIn { from { transform: scale(0.9); opacity:0; } to { transform:none; opacity:1; } }
+        .modal-title { font-family: 'IBM Plex Mono', monospace; font-size: 1rem; font-weight: 700; margin-bottom: 20px; }
+        .modal-close { float: right; background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--muted); }
+
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* EMPTY STATE */
+        .empty {
+            text-align: center;
+            padding: 30px;
+            color: var(--muted);
+            font-size: 0.85rem;
+        }
+        .empty-icon { font-size: 2.5rem; margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="app-header">
+    <div class="header-top">
+        <div class="app-title">LABORAL<span>.</span>APP</div>
+        <div class="header-actions">
+            <button id="pwa-install-btn" onclick="installPWA()">📲 INSTALAR APP</button>
+            <button class="gear-btn" onclick="openSettings()" title="Configuración">⚙️</button>
+        </div>
+    </div>
+    <div class="nav-tabs">
+        <button id="tabH" class="nav-btn active" onclick="showView('horas')">⏱️ Horas Extras</button>
+        <button id="tabV" class="nav-btn" onclick="showView('vaca')">🌴 Vacaciones</button>
+    </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="modal-settings">
+    <div class="modal">
+        <button class="modal-close" onclick="closeSettings()">×</button>
+        <div class="modal-title">⚙️ Configuración</div>
+        <label>💰 Tarifa hora extra (€/h)</label>
+        <input type="number" id="cfg-tarifa" min="1" max="100" step="0.5" value="8">
+        <label>📅 Días vacaciones al año</label>
+        <input type="number" id="cfg-vaca" min="1" max="50" step="1" value="22">
+        <label>⏰ Entrada habitual L-J</label>
+        <input type="time" id="cfg-entrada-lj" value="07:30">
+        <label>⏰ Salida habitual L-J</label>
+        <input type="time" id="cfg-salida-lj" value="16:00">
+        <label>⏰ Entrada habitual Viernes</label>
+        <input type="time" id="cfg-entrada-v" value="07:00">
+        <label>⏰ Salida habitual Viernes</label>
+        <input type="time" id="cfg-salida-v" value="15:00">
+        <button class="btn btn-primary" style="margin-top:8px" onclick="saveSettings()">💾 GUARDAR</button>
+    </div>
+</div>
+
+<!-- MAIN -->
+<div class="container">
+
+    <!-- HORAS VIEW -->
+    <div id="view-horas" class="view active">
+        <div class="horario-ref" id="horario-display">
+            <span class="hl">L-J:</span> 07:30 → 16:00 &nbsp;|&nbsp; <span class="hl">V:</span> 07:00 → 15:00
+        </div>
+
+        <div class="section-title">Registrar jornada</div>
+        <div class="card">
+            <label>📅 Fecha</label>
+            <input type="date" id="h-fecha">
+            <div class="row">
+                <div><label>📥 Entrada</label><input type="time" id="h-entrada" value="07:30"></div>
+                <div><label>📤 Salida</label><input type="time" id="h-salida" value="17:00"></div>
+            </div>
+            <label class="check-label">
+                <input type="checkbox" id="h-comida">
+                <span>🍽️ Incluye pausa comida (−1h)</span>
+            </label>
+            <textarea id="h-nota" placeholder="Nota opcional..."></textarea>
+            <button class="btn btn-primary" onclick="saveHora()">➕ GUARDAR JORNADA</button>
+        </div>
+
+        <div class="section-title">Ver por mes</div>
+        <div class="mes-row">
+            <select id="h-mes" onchange="renderHoras()"></select>
+            <select id="h-anio" onchange="renderHoras()"></select>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total horas</div>
+                <div class="stat-value" id="h-sum-h">0.0</div>
+            </div>
+            <div class="stat-card highlight">
+                <div class="stat-label">A cobrar</div>
+                <div class="stat-value" id="h-sum-d">0€</div>
+            </div>
+        </div>
+
+        <button class="btn btn-success" onclick="shareHoras(event)">📤 Compartir por WhatsApp</button>
+        <div id="list-horas" style="margin-top:14px"></div>
+    </div>
+
+    <!-- VACACIONES VIEW -->
+    <div id="view-vaca" class="view">
+        <div class="section-title">Saldo de vacaciones</div>
+        <div class="progress-wrap">
+            <div class="progress-meta">
+                <span id="v-progress-label">0 / 22 días gastados</span>
+                <span id="v-progress-pct">0%</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" id="v-progress-bar"></div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card empresa">
+                <div class="stat-label">🏢 Empresa</div>
+                <div class="stat-value" id="v-sum-e">0</div>
+            </div>
+            <div class="stat-card trabajador">
+                <div class="stat-label">👤 Yo</div>
+                <div class="stat-value" id="v-sum-t">0</div>
+            </div>
+        </div>
+
+        <div class="section-title">Registrar período</div>
+        <div class="card">
+            <div class="row">
+                <div><label>📅 Desde</label><input type="date" id="v-desde"></div>
+                <div><label>📅 Hasta</label><input type="date" id="v-hasta"></div>
+            </div>
+            <label>👤 ¿Quién elige estos días?</label>
+            <div class="type-picker">
+                <button id="v-btn-e" class="type-btn" onclick="vType('empresa')">🏢 EMPRESA</button>
+                <button id="v-btn-t" class="type-btn" onclick="vType('trabajador')">👤 YO</button>
+            </div>
+            <textarea id="v-nota" placeholder="Nota opcional..."></textarea>
+            <button class="btn btn-primary" onclick="saveVaca()">✅ REGISTRAR VACACIONES</button>
+        </div>
+
+        <button class="btn btn-success" onclick="shareVaca(event)" style="margin-bottom:14px">📤 Compartir por WhatsApp</button>
+        <div id="list-vaca"></div>
+    </div>
+
+    <!-- BACKUP -->
+    <div class="backup-row">
+        <button class="btn-backup" onclick="exportBackup()">💾 Exportar backup</button>
+        <button class="btn-backup" onclick="document.getElementById('importFile').click()">📥 Importar backup</button>
+        <input type="file" id="importFile" style="display:none" accept=".json" onchange="importBackup(event)">
+    </div>
+
+</div>
+
+<script>
+// ─── CONFIG & DATA ───────────────────────────────────────────
+let cfg = JSON.parse(localStorage.getItem('cfg_laboral')) || {
+    tarifa: 8, vacaDias: 22,
+    entradaLJ: '07:30', salidaLJ: '16:00',
+    entradaV: '07:00', salidaV: '15:00'
+};
+let dbH = JSON.parse(localStorage.getItem('dbH_vFinal')) || [];
+let dbV = JSON.parse(localStorage.getItem('dbV_vFinal')) || [];
+let currentVType = '';
+let deferredPrompt = null;
+
+// ─── PWA ─────────────────────────────────────────────────────
+const manifestData = {
+    name: "Laboral Master",
+    short_name: "Laboral",
+    description: "Registro de horas extras y vacaciones",
+    start_url: window.location.href,
+    display: "standalone",
+    background_color: "#f0f4f8",
+    theme_color: "#1e293b",
+    icons: [{
+        src: "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#1e293b"/><text x="256" y="320" font-size="280" text-anchor="middle" fill="#f59e0b">⏱</text></svg>`),
+        sizes: "512x512", type: "image/svg+xml", purpose: "any maskable"
+    }]
+};
+const manifestBlob = new Blob([JSON.stringify(manifestData)], {type:'application/manifest+json'});
+document.getElementById('pwa-manifest').href = URL.createObjectURL(manifestBlob);
+
+window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('pwa-install-btn').style.display = 'block';
+});
+window.addEventListener('appinstalled', () => {
+    document.getElementById('pwa-install-btn').style.display = 'none';
+    showToast('✅ App instalada correctamente');
+});
+
+function installPWA() {
+    if(deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(r => {
+            if(r.outcome === 'accepted') showToast('✅ Instalando...');
+            deferredPrompt = null;
+        });
+    } else {
+        showToast('ℹ️ Usa "Añadir a pantalla de inicio" en tu navegador', true);
+    }
+}
+
+// Service Worker inline via Blob
+const swCode = `
+const CACHE = 'laboral-v2';
+self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll([]))));
+self.addEventListener('fetch', e => {
+    e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+});
+`;
+const swBlob = new Blob([swCode], {type:'application/javascript'});
+const swUrl = URL.createObjectURL(swBlob);
+if('serviceWorker' in navigator) {
+    navigator.serviceWorker.register(swUrl).catch(() => {});
+}
+
+// ─── TOAST ───────────────────────────────────────────────────
+function showToast(msg, isError=false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (isError ? ' error' : '');
+    setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ─── SETTINGS ────────────────────────────────────────────────
+function openSettings() {
+    document.getElementById('cfg-tarifa').value = cfg.tarifa;
+    document.getElementById('cfg-vaca').value = cfg.vacaDias;
+    document.getElementById('cfg-entrada-lj').value = cfg.entradaLJ;
+    document.getElementById('cfg-salida-lj').value = cfg.salidaLJ;
+    document.getElementById('cfg-entrada-v').value = cfg.entradaV;
+    document.getElementById('cfg-salida-v').value = cfg.salidaV;
+    document.getElementById('modal-settings').classList.add('open');
+}
+function closeSettings() { document.getElementById('modal-settings').classList.remove('open'); }
+function saveSettings() {
+    cfg.tarifa = parseFloat(document.getElementById('cfg-tarifa').value) || 8;
+    cfg.vacaDias = parseInt(document.getElementById('cfg-vaca').value) || 22;
+    cfg.entradaLJ = document.getElementById('cfg-entrada-lj').value;
+    cfg.salidaLJ = document.getElementById('cfg-salida-lj').value;
+    cfg.entradaV = document.getElementById('cfg-entrada-v').value;
+    cfg.salidaV = document.getElementById('cfg-salida-v').value;
+    localStorage.setItem('cfg_laboral', JSON.stringify(cfg));
+    closeSettings();
+    updateHorarioDisplay();
+    saveAndRender();
+    showToast('✅ Configuración guardada');
+}
+function updateHorarioDisplay() {
+    document.getElementById('horario-display').innerHTML =
+        `<span class="hl">L-J:</span> ${cfg.entradaLJ} → ${cfg.salidaLJ} &nbsp;|&nbsp; <span class="hl">V:</span> ${cfg.entradaV} → ${cfg.salidaV}`;
+}
+
+// ─── VIEW CONTROL ─────────────────────────────────────────────
+function showView(v) {
+    document.querySelectorAll('.view').forEach(e => e.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('view-'+v).classList.add('active');
+    document.getElementById(v==='horas'?'tabH':'tabV').classList.add('active');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────
+function init() {
+    const hoy = new Date();
+    document.getElementById('h-fecha').valueAsDate = hoy;
+    document.getElementById('v-desde').valueAsDate = hoy;
+    document.getElementById('v-hasta').valueAsDate = hoy;
+
+    // Actualizar hora entrada con cfg
+    document.getElementById('h-entrada').value = cfg.entradaLJ;
+
+    const mSelect = document.getElementById('h-mes');
+    ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
+        .forEach((m,i) => mSelect.add(new Option(m,i)));
+    mSelect.value = hoy.getMonth();
+
+    // Años dinámicos: desde el más antiguo en datos hasta el actual+1
+    const aSelect = document.getElementById('h-anio');
+    let minYear = hoy.getFullYear();
+    dbH.forEach(x => { const y = getSafeDate(x.f).getFullYear(); if(y < minYear) minYear = y; });
+    for(let a = hoy.getFullYear()+1; a >= Math.min(minYear, 2024); a--) aSelect.add(new Option(a,a));
+    aSelect.value = hoy.getFullYear();
+
+    updateHorarioDisplay();
+    renderHoras();
+    renderVaca();
+}
+
+// ─── HELPERS ──────────────────────────────────────────────────
+function getSafeDate(isoString) { return new Date(isoString + 'T12:00:00'); }
+const t2m = t => { const [h,m] = t.split(':').map(Number); return h*60+m; };
+
+// ─── HORAS ────────────────────────────────────────────────────
+function saveHora() {
+    const f = document.getElementById('h-fecha').value,
+          e = document.getElementById('h-entrada').value,
+          s = document.getElementById('h-salida').value,
+          c = document.getElementById('h-comida').checked,
+          n = document.getElementById('h-nota').value.trim();
+    if(!f||!e||!s) return showToast('⚠️ Completa todos los campos', true);
+
+    const dt = getSafeDate(f), dia = dt.getDay();
+    const esViernes = dia === 5;
+    const esFinSemana = dia===0||dia===6;
+
+    const iO = esViernes ? cfg.entradaV : (esFinSemana ? null : cfg.entradaLJ);
+    const oO = esViernes ? cfg.salidaV  : (esFinSemana ? null : cfg.salidaLJ);
+
+    const mE = t2m(e), mS = t2m(s);
+    if(mS <= mE) return showToast('⚠️ La salida debe ser posterior a la entrada', true);
+
+    let ex = 0;
+    if(!iO) {
+        ex = mS - mE; // fin de semana = todo son horas
+    } else {
+        const mOi = t2m(iO), mOo = t2m(oO);
+        if(mE < mOi) ex += (mOi - mE);
+        if(mS > mOo) ex += (mS - mOo);
+    }
+    let total = Math.max(0, ex / 60);
+    if(c) total = Math.max(0, total - 1);
+
+    if(total <= 0) return showToast('ℹ️ No hay horas extra en esta jornada', true);
+
+    dbH.push({ id:Date.now(), f, e, s, total, n });
+    document.getElementById('h-nota').value = '';
+    saveAndRender();
+    showToast(`✅ +${total.toFixed(2)}h guardadas`);
+}
+
+function renderHoras() {
+    const m = parseInt(document.getElementById('h-mes').value),
+          a = parseInt(document.getElementById('h-anio').value);
+    const list = document.getElementById('list-horas');
+    list.innerHTML = '';
+    let sH = 0;
+    const filtradas = dbH.filter(x => {
+        const d = getSafeDate(x.f);
+        return d.getMonth()===m && d.getFullYear()===a;
+    }).sort((a,b) => new Date(a.f)-new Date(b.f));
+
+    if(filtradas.length===0) {
+        list.innerHTML = '<div class="empty"><div class="empty-icon">📋</div>Sin registros este mes</div>';
+    } else {
+        filtradas.forEach(x => {
+            sH += x.total;
+            const div = document.createElement('div');
+            div.className = 'item-card';
+            div.innerHTML = `
+                <div style="flex:1">
+                    <div class="item-date">${x.f.split('-').reverse().join('/')}</div>
+                    <div class="item-sub">🕒 ${x.e} → ${x.s}</div>
+                    ${x.n ? `<div class="item-note">📝 ${x.n}</div>` : ''}
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <div class="item-hours">+${x.total.toFixed(2)}h</div>
+                    <button class="del-btn" onclick="delH(${x.id})">🗑️</button>
+                </div>`;
+            list.appendChild(div);
+        });
+    }
+    document.getElementById('h-sum-h').innerText = sH.toFixed(2);
+    document.getElementById('h-sum-d').innerText = (sH * cfg.tarifa).toFixed(0) + '€';
+}
+
+// ─── VACACIONES ───────────────────────────────────────────────
+function vType(t) {
+    currentVType = t;
+    document.getElementById('v-btn-e').className = 'type-btn' + (t==='empresa'?' active-emp':'');
+    document.getElementById('v-btn-t').className = 'type-btn' + (t==='trabajador'?' active-trab':'');
+}
+
+function saveVaca() {
+    const dI = document.getElementById('v-desde').value,
+          hI = document.getElementById('v-hasta').value,
+          n  = document.getElementById('v-nota').value.trim();
+    if(!currentVType) return showToast('⚠️ Indica quién elige los días', true);
+    if(!dI||!hI) return showToast('⚠️ Selecciona las fechas', true);
+    if(dI > hI) return showToast('⚠️ La fecha de inicio debe ser anterior al fin', true);
+
+    let cur = getSafeDate(dI), fin = getSafeDate(hI), count = 0;
+    while(cur <= fin) {
+        if(cur.getDay()!==0 && cur.getDay()!==6) {
+            const s = cur.toISOString().split('T')[0];
+            if(!dbV.some(x=>x.f===s)) { dbV.push({id: Date.now()+Math.random(), f:s, t:currentVType, n}); count++; }
+        }
+        cur.setDate(cur.getDate()+1);
+    }
+    document.getElementById('v-nota').value = '';
+    saveAndRender();
+    showToast(`✅ ${count} día${count!==1?'s':''} registrado${count!==1?'s':''}`);
+}
+
+function renderVaca() {
+    const list = document.getElementById('list-vaca');
+    list.innerHTML = '';
+    let e=0, t=0;
+    const anioHoy = new Date().getFullYear();
+
+    const sorted = dbV.sort((a,b) => new Date(b.f)-new Date(a.f));
+    if(sorted.length===0) {
+        list.innerHTML = '<div class="empty"><div class="empty-icon">🌴</div>Sin vacaciones registradas</div>';
+    }
+    sorted.forEach(v => {
+        const d = getSafeDate(v.f);
+        if(d.getFullYear()===anioHoy) { v.t==='empresa' ? e++ : t++; }
+        const div = document.createElement('div');
+        div.className = 'item-card';
+        div.style.borderLeftColor = v.t==='empresa' ? 'var(--empresa-color)' : 'var(--trabajador-color)';
+        div.innerHTML = `
+            <div style="flex:1">
+                <div class="item-date">${v.f.split('-').reverse().join('/')}</div>
+                <div class="item-sub">${v.t==='empresa'?'🏢 EMPRESA':'👤 YO'}</div>
+                ${v.n ? `<div class="item-note">📝 ${v.n}</div>` : ''}
+            </div>
+            <button class="del-btn" onclick="delV(${v.id})">🗑️</button>`;
+        list.appendChild(div);
+    });
+
+    const total = e+t, max = cfg.vacaDias;
+    document.getElementById('v-sum-e').innerText = e;
+    document.getElementById('v-sum-t').innerText = t;
+    const pct = Math.min(100, (total/max)*100);
+    document.getElementById('v-progress-bar').style.width = pct+'%';
+    document.getElementById('v-progress-bar').className = 'progress-fill' + (pct>=80?' danger':'');
+    document.getElementById('v-progress-label').innerText = `${total} / ${max} días gastados (${anioHoy})`;
+    document.getElementById('v-progress-pct').innerText = pct.toFixed(0)+'%';
+}
+
+// ─── DELETE ───────────────────────────────────────────────────
+function delH(id) { dbH = dbH.filter(x=>x.id!==id); saveAndRender(); showToast('🗑️ Registro eliminado'); }
+function delV(id) { dbV = dbV.filter(x=>x.id!==id); saveAndRender(); showToast('🗑️ Día eliminado'); }
+
+// ─── SAVE ─────────────────────────────────────────────────────
+function saveAndRender() {
+    localStorage.setItem('dbH_vFinal', JSON.stringify(dbH));
+    localStorage.setItem('dbV_vFinal', JSON.stringify(dbV));
+    renderHoras(); renderVaca();
+}
+
+// ─── SHARE ────────────────────────────────────────────────────
+async function shareHoras(e) {
+    if(e) e.preventDefault();
+    const mIdx = parseInt(document.getElementById('h-mes').value);
+    const aVal  = parseInt(document.getElementById('h-anio').value);
+    const meses = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+    const filtradas = dbH.filter(x => {
+        const d = getSafeDate(x.f);
+        return d.getMonth()===mIdx && d.getFullYear()===aVal;
+    }).sort((a,b)=>new Date(a.f)-new Date(b.f));
+
+    if(filtradas.length===0) return showToast('ℹ️ Sin horas registradas este mes', true);
+
+    let txt = `⏱️ *HORAS EXTRAS – ${meses[mIdx].toUpperCase()} ${aVal}*\n\n`;
+    filtradas.forEach(x => txt += `• ${x.f.split('-').reverse().join('/')}: *${x.total.toFixed(2)}h*${x.n?' ['+x.n+']':''}\n`);
+    txt += `\n📊 *TOTAL:* ${document.getElementById('h-sum-h').innerText}h`;
+    txt += `\n💰 *A COBRAR:* ${document.getElementById('h-sum-d').innerText}`;
+    txt += `\n_(tarifa: ${cfg.tarifa}€/h)_`;
+
+    if(navigator.share) {
+        try { await navigator.share({text: txt}); }
+        catch(err) { if(err.name!=='AbortError') showToast('⚠️ No se pudo compartir', true); }
+    } else {
+        await navigator.clipboard.writeText(txt).catch(()=>{});
+        showToast('📋 Copiado al portapapeles');
+    }
+}
+
+async function shareVaca(e) {
+    if(e) e.preventDefault();
+    const anioHoy = new Date().getFullYear();
+    const filtradas = dbV.filter(v => getSafeDate(v.f).getFullYear()===anioHoy).sort((a,b)=>new Date(a.f)-new Date(b.f));
+    if(filtradas.length===0) return showToast('ℹ️ Sin vacaciones registradas', true);
+
+    let txt = `🌴 *VACACIONES – ${anioHoy}*\n\n`;
+    filtradas.forEach(v => txt += `• ${v.f.split('-').reverse().join('/')}: ${v.t==='empresa'?'Empresa':'Yo'}${v.n?' ['+v.n+']':''}\n`);
+    txt += `\n📊 *RESUMEN:* 🏢 Empresa (${document.getElementById('v-sum-e').innerText}) | 👤 Yo (${document.getElementById('v-sum-t').innerText})`;
+    txt += `\n📅 *TOTAL:* ${parseInt(document.getElementById('v-sum-e').innerText)+parseInt(document.getElementById('v-sum-t').innerText)}/${cfg.vacaDias} días`;
+
+    if(navigator.share) {
+        try { await navigator.share({text: txt}); }
+        catch(err) { if(err.name!=='AbortError') showToast('⚠️ No se pudo compartir', true); }
+    } else {
+        await navigator.clipboard.writeText(txt).catch(()=>{});
+        showToast('📋 Copiado al portapapeles');
+    }
+}
+
+// ─── BACKUP ───────────────────────────────────────────────────
+function exportBackup() {
+    const ts = new Date().toISOString().split('T')[0];
+    const blob = new Blob([JSON.stringify({horas:dbH, vacaciones:dbV, config:cfg})], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `backup_laboral_${ts}.json`;
+    a.click();
+    showToast('💾 Backup exportado');
+}
+function importBackup(ev) {
+    const file = ev.target.files[0];
+    const reader = new FileReader();
+    reader.onload = e => {
+        try {
+            const data = JSON.parse(e.target.result);
+            dbH = data.horas || [];
+            dbV = data.vacaciones || [];
+            if(data.config) { cfg = data.config; localStorage.setItem('cfg_laboral', JSON.stringify(cfg)); }
+            saveAndRender();
+            updateHorarioDisplay();
+            showToast('✅ Backup importado correctamente');
+        } catch { showToast('❌ Error al importar el archivo', true); }
+    };
+    reader.readAsText(file);
+    ev.target.value = '';
+}
+
+// ─── CLOSE MODAL CLICKING OUTSIDE ────────────────────────────
+document.getElementById('modal-settings').addEventListener('click', function(e) {
+    if(e.target === this) closeSettings();
+});
+
+window.onload = init;
+</script>
+</body>
+</html>
